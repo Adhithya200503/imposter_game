@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMPOSTER — Social Deduction Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --surface2: #f1f3f4;
+  --border: rgba(0,0,0,0.08);
+  --text: #202124;
+  --muted: #5f6368;
+  --accent: #1a73e8;
+  --accent-dark: #0d47a1;
+  --game-yellow: #e8ff5a;
+  --game-dark: #0a0a0f;
+  --game-red: #ff3d6e;
+  --game-teal: #5affda;
+  --radius: 16px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08);
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Hero banner ── */
+.hero {
+  background: var(--game-dark);
+  position: relative;
+  overflow: hidden;
+  padding: 48px 24px 52px;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 60% 50%, rgba(232,255,90,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 20% 80%, rgba(90,255,218,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(255,61,110,0.06) 0%, transparent 50%);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  position: relative;
+  z-index: 1;
+}
+.hero-icon {
+  width: 108px; height: 108px;
+  border-radius: 22px;
+  background: #111124;
+  border: 2px solid rgba(232,255,90,0.25);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.hero-icon img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.hero-icon-placeholder {
+  font-size: 2.4rem; font-weight: 800;
+  color: var(--game-yellow);
+  letter-spacing: -2px;
+}
+.hero-info { flex: 1; }
+.hero-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  color: var(--game-yellow);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.hero-title span { color: #f0f0f8; }
+.hero-dev {
+  font-size: 0.82rem;
+  color: var(--game-teal);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+}
+.hero-tags {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.tag {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.75);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-install {
+  background: var(--game-yellow);
+  color: var(--game-dark);
+  border: none;
+  padding: 13px 32px;
+  border-radius: 10px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none;
+}
+.btn-install:hover { background: #d4e84f; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(232,255,90,0.3); }
+.btn-share {
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 13px 24px;
+  border-radius: 10px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.btn-share:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+
+/* ── Main content ── */
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+
+/* ── Screenshots ── */
+.section-title {
+  font-size: 0.65rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+/* ── EDITABLE SCREENSHOTS ── */
+.screenshots-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  margin-bottom: 28px;
+}
+.screenshots-scroll::-webkit-scrollbar { height: 4px; }
+.screenshots-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.screenshot-card {
+  flex-shrink: 0;
+  width: 200px;
+  height: 360px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--game-dark);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.screenshot-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.screenshot-card img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.screenshot-placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  color: rgba(255,255,255,0.2);
+  font-size: 0.75rem;
+  font-family: 'DM Mono', monospace;
+  text-align: center;
+  padding: 16px;
+}
+.screenshot-placeholder .icon { font-size: 2rem; opacity: 0.3; }
+
+/* ── About card ── */
+.about-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.about-desc {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.about-desc strong { color: var(--text); font-weight: 700; }
+.read-more {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Syne', sans-serif;
+}
+
+/* ── Feature chips ── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.feature-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: var(--shadow);
+}
+.feature-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: var(--game-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.feature-text { flex: 1; }
+.feature-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.feature-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  line-height: 1.4;
+}
+
+/* ── Info grid ── */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.info-label {
+  font-size: 0.65rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.info-val {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ── Footer CTA ── */
+.footer-cta {
+  background: var(--game-dark);
+  border-radius: var(--radius);
+  padding: 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.footer-cta::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(232,255,90,0.07) 0%, transparent 70%);
+}
+.footer-cta-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--game-yellow);
+  margin-bottom: 6px;
+  position: relative;
+}
+.footer-cta-sub {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.4);
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+/* ── Lightbox ── */
+.lightbox {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.88);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.lightbox.show { opacity: 1; pointer-events: all; }
+.lightbox img {
+  max-width: 90vw; max-height: 88vh;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.lightbox-close {
+  position: absolute; top: 20px; right: 24px;
+  color: #fff; font-size: 1.8rem;
+  cursor: pointer; background: none; border: none;
+  font-family: monospace; line-height: 1;
+  opacity: 0.7; transition: opacity 0.15s;
+}
+.lightbox-close:hover { opacity: 1; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .hero-inner { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .hero-icon { width: 80px; height: 80px; border-radius: 16px; }
+  .ratings-card { flex-direction: column; gap: 16px; }
+  .info-grid { grid-template-columns: 1fr; }
+  .stats-inner { gap: 0; }
+  .stat-val { font-size: 0.95rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-icon" id="heroIconWrap">
+      <!-- REPLACE src WITH YOUR ICON URL -->
+      <img id="heroIconImg" src="./images/logo.png" alt="Imposter Icon"
+           onerror="this.style.display='none';document.getElementById('heroIconFallback').style.display='flex'">
+      <div id="heroIconFallback" class="hero-icon-placeholder" style="display:none">IMP</div>
+    </div>
+    <div class="hero-info">
+      <div class="hero-title">IMP<span>O</span>STER</div>
+      <div class="hero-dev">by Adhithya · Social Deduction</div>
+      <div class="hero-tags">
+        <span class="tag">Party Game</span>
+        <span class="tag">Multiplayer</span>
+        <span class="tag">Free</span>
+      </div>
+      <div class="hero-actions">
+        <a class="btn-install" href="https://github.com/Adhithya200503/imposter_game/releases/download/imposter-game-v1/app-release.apk" download>
+          ↓ Install Game
+        </a>
+        <button class="btn-share" onclick="shareGame()">⤴ Share</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Screenshots -->
+  <div class="section-title">Screenshots</div>
+  <div class="screenshots-scroll" id="screenshotsRow">
+    <div class="screenshot-card" onclick="openLightbox('./images/image1.jpeg')">
+      <img src="./images/image1.jpeg" alt="Setup screen"
+           onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'><div class=\'icon\'>🖼</div><span>Screenshot 1</span></div>'">
+    </div>
+    <div class="screenshot-card" onclick="openLightbox('./images/image2.jpeg')">
+      <img src="./images/image2.jpeg" alt="Card reveal"
+           onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'><div class=\'icon\'>🖼</div><span>Screenshot 2</span></div>'">
+    </div>
+    <div class="screenshot-card" onclick="openLightbox('./images/image3.jpeg')">
+      <img src="./images/image3.jpeg" alt="Discussion"
+           onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'><div class=\'icon\'>🖼</div><span>Screenshot 3</span></div>'">
+    </div>
+    <div class="screenshot-card" onclick="openLightbox('./images/image4.jpeg')">
+      <img src="./images/image4.jpeg" alt="Result screen"
+           onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'><div class=\'icon\'>🖼</div><span>Screenshot 4</span></div>'">
+    </div>
+    <div class="screenshot-card" onclick="openLightbox('./images/image5.jpeg')">
+      <img src="./images/image5.jpeg" alt="Gameplay"
+           onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'><div class=\'icon\'>🖼</div><span>Screenshot 5</span></div>'">
+    </div>
+    <div class="screenshot-card" onclick="openLightbox('./images/image6.jpeg')">
+      <img src="./images/image6.jpeg" alt="Players"
+           onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'><div class=\'icon\'>🖼</div><span>Screenshot 6</span></div>'">
+    </div>
+  </div>
+  <!-- About -->
+  <div class="section-title">About this game</div>
+  <div class="about-card">
+    <div class="about-desc" id="aboutText">
+      <strong>IMPOSTER</strong> is the ultimate party social deduction game for 3–12 players. One player secretly becomes the Imposter — they don't know the secret word. Everyone else does.<br><br>
+      Give voice clues, discuss, debate, and vote. Can the group sniff out the imposter before they blend in perfectly? Can the imposter figure out the word just from everyone else's hints?<br><br>
+      <span id="aboutExtra" style="display:none">
+        No apps to install. No internet needed. Just phones, friends, and deception. Perfect for parties, travel, family nights, and icebreakers. Features 100+ words across Animals, Foods, Objects, Professions, and Nature categories — no two rounds are ever the same.
+      </span>
+    </div>
+    <button class="read-more" onclick="toggleAbout()">Read more</button>
+  </div>
+
+  <!-- Features -->
+  <div class="section-title">Features</div>
+  <div class="features-grid">
+    <div class="feature-chip">
+      <div class="feature-icon">🎭</div>
+      <div class="feature-text">
+        <div class="feature-name">Social Deduction</div>
+        <div class="feature-sub">Blend in or expose the liar</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="feature-icon">👥</div>
+      <div class="feature-text">
+        <div class="feature-name">Infinite Players</div>
+        <div class="feature-sub">One phone, everyone plays</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="feature-icon">🔤</div>
+      <div class="feature-text">
+        <div class="feature-name">100+ Words</div>
+        <div class="feature-sub">5 categories, always random</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="feature-icon">✈️</div>
+      <div class="feature-text">
+        <div class="feature-name">Offline Play</div>
+        <div class="feature-sub">No internet required</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-text">
+        <div class="feature-name">Fast Rounds</div>
+        <div class="feature-sub">5–10 minutes per game</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="feature-icon">🆓</div>
+      <div class="feature-text">
+        <div class="feature-name">100% Free</div>
+        <div class="feature-sub">No ads, no purchases</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="section-title" style="margin-top:8px">App info</div>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-label">Version</div>
+      <div class="info-val">1.0.0</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Size</div>
+      <div class="info-val">~900 KB</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Requires</div>
+      <div class="info-val">Android 5.0+</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Category</div>
+      <div class="info-val">Party / Word</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Language</div>
+      <div class="info-val">English</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Updated</div>
+      <div class="info-val">Mar 2026</div>
+    </div>
+  </div>
+
+  <!-- Footer CTA -->
+  <div class="footer-cta">
+    <div class="footer-cta-title">Ready to play?</div>
+    <div class="footer-cta-sub">Free · No ads · No internet needed</div>
+    <a class="btn-install" href="https://github.com/Adhithya200503/imposter_game/releases/download/imposter-game-v1/app-release.apk" download style="display:inline-flex;margin:0 auto">
+      ↓ Download APK
+    </a>
+  </div>
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="Screenshot">
+</div>
+
+<script>
+function openLightbox(src) {
+  if (!src || src.includes('YOUR_')) return;
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox(); });
+
+function toggleAbout() {
+  const extra = document.getElementById('aboutExtra');
+  const btn = event.target;
+  if (extra.style.display === 'none') {
+    extra.style.display = 'inline';
+    btn.textContent = 'Show less';
+  } else {
+    extra.style.display = 'none';
+    btn.textContent = 'Read more';
+  }
+}
+
+function shareGame() {
+  if (navigator.share) {
+    navigator.share({ title: 'IMPOSTER — Social Deduction Game', text: 'Check out this awesome party game!', url: window.location.href });
+  } else {
+    navigator.clipboard.writeText(window.location.href).then(() => alert('Link copied!'));
+  }
+}
+</script>
+</body>
+</html>
